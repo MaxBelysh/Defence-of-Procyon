@@ -29,37 +29,37 @@ class GameLevel:
         self.y_pos2 = -600
         self.image1 = pygame.transform.scale(load_image("cosmos.png"), self.size)
         self.image2 = pygame.transform.scale(load_image("cosmos.png"), self.size)
-        self.alternation = 0
+        self.alternation = 1
+        self.background_speed = 0.5
 
     def update_background(self, screen):
+        screen.fill((0, 0, 0))
         screen.blit(self.image1, (0, self.y_pos1))
         screen.blit(self.image2, (0, self.y_pos2))
-        self.y_pos1 += 0.1
-        self.y_pos2 += 0.1
-        if self.alternation == 0:
-            if self.y_pos2 == 0:
+        self.y_pos1 += self.background_speed
+        self.y_pos2 += self.background_speed
+        if self.alternation == 1:
+            if self.y_pos1 >= 600:
                 self.y_pos1 = -600
-                self.alternation = 1
+                self.alternation = 2
         else:
-            if self.y_pos1 == 0:
+            if self.y_pos2 >= 600:
                 self.y_pos2 = -600
-                self.alternation = 0
-
-
+                self.alternation = 1
 
 
 if __name__ == "__main__":
     pygame.init()
     width, height = size = 800, 600
     screen = pygame.display.set_mode(size)
-    background = GameLevel()
+    GameLevel = GameLevel()
 
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        background.update_background(screen)
+        GameLevel.update_background(screen)
         pygame.display.flip()
 
     pygame.quit()

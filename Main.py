@@ -1,6 +1,7 @@
 import os
 import sys
 import pygame
+import csv
 
 
 def load_image(name, color_key=None):
@@ -21,8 +22,13 @@ def load_image(name, color_key=None):
     return image
 
 
-class GameLevel:
+class GameScene:
     def __init__(self, width, height):
+        # GameScene
+        self.score = 0
+        self.max_score = 0
+
+        # GameLevel
         self.images = os.listdir("data")
         self.width = width
         self.height = height
@@ -60,12 +66,15 @@ class GameLevel:
                 self.image2 = pygame.transform.scale(load_image(self.images[self.number_of_image]), self.size)
                 self.alternation = 1
 
+    def change_speed(self):
+        pass
+
 
 if __name__ == "__main__":
     pygame.init()
     width, height = size = 1000, 600
     screen = pygame.display.set_mode(size)
-    GameLevel = GameLevel(width, height)
+    GameLevel = GameScene(width, height)
 
     running = True
     while running:

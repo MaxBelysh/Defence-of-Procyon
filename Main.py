@@ -22,11 +22,15 @@ def load_image(name, color_key=None):
     return image
 
 
+class Entity:
+    def __init__(self):
+        pass
+
 class GameScene:
     def __init__(self, width, height):
         # GameScene
         self.score = 0
-        self.max_score = 0
+        self.max_score = int(open("max_score.csv", encoding="utf-8").read().split("\n")[1])
 
         # GameLevel
         self.images = os.listdir("data")
@@ -66,7 +70,10 @@ class GameScene:
                 self.image2 = pygame.transform.scale(load_image(self.images[self.number_of_image]), self.size)
                 self.alternation = 1
 
-    def change_speed(self):
+    def get_max_score(self):
+        return self.max_score
+
+    def set_max_score(self):
         pass
 
 
@@ -74,15 +81,22 @@ if __name__ == "__main__":
     pygame.init()
     width, height = size = 1000, 600
     screen = pygame.display.set_mode(size)
-    GameLevel = GameScene(width, height)
+    GameScene = GameScene(width, height)
+    print(GameScene.get_max_score())
 
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        GameLevel.update_background(screen)
+        GameScene.update_background(screen)
         pygame.display.flip()
+
+    if GameScene.get_max_score() > int(open("max_score.csv", encoding="utf-8").read().split("\n")[1]):
+        with open("max_score.csv", "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile, delimiter=";")
+            writer.writerow(["max score"])
+            writer.writerow([str(GameScene.get_max_score())])
 
     pygame.quit()
 

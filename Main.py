@@ -49,7 +49,7 @@ class Player(Entity):
     def update(self):
         pass
 
-    def get_mouse_pos(self, pos):
+    def update_pos(self, pos):
         self.rect.x = pos[0]
         self.rect.y = pos[1]
 
@@ -120,9 +120,9 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEMOTION:
-                player.get_mouse_pos(event.pos)
-        player_sprite_group.draw(screen)
+                player.update_pos(event.pos)
         GameScene.update_background(screen)
+        player_sprite_group.draw(screen)
         pygame.display.flip()
 
     if GameScene.get_max_score() > int(open("max_score.csv", encoding="utf-8").read().split("\n")[1]):

@@ -22,38 +22,6 @@ def load_image(name, directory, color_key=None):
     return image
 
 
-class Entity(pygame.sprite.Sprite):
-    def __init__(self, group, x, y):
-        super().__init__(group)
-        self.health = 999
-        self.image = pygame.transform.scale(load_image("none.png", "entity", color_key=-1), (100, 100))
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-
-    def update(self):
-        if self.health <= 0:
-            self.kill()
-
-
-class Enemy(Entity):
-    pass
-
-
-class Player(Entity):
-    def __init__(self, group, x, y):
-        super().__init__(group, x, y)
-        self.health = 3
-        self.image = load_image("plane.png", "entity", color_key=-1)
-
-    def update(self):
-        pass
-
-    def update_pos(self, pos):
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
-
-
 class GameScene:
     def __init__(self, width, height):
         # GameScene
@@ -105,11 +73,64 @@ class GameScene:
         pass
 
 
+class Entity(pygame.sprite.Sprite):
+    def __init__(self, group, x, y):
+        super().__init__(group)
+        self.health = 999
+        self.image = pygame.transform.scale(load_image("none.png", "entity", color_key=-1), (100, 100))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def update(self):
+        if self.health <= 0:
+            self.kill()
+
+
+class Enemy(Entity):
+    pass
+
+
+class Player(Entity):
+    def __init__(self, group, x, y):
+        super().__init__(group, x, y)
+        self.health = 3
+        self.image = load_image("plane.png", "entity", color_key=-1)
+        self.image = pygame.transform.scale(self.image, (100, 100))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def update(self):
+        pass
+
+    def update_pos(self, pos):
+        # сделать так чтоб корабль свободно перемещался по углам
+        if (0 <= pos[0] - self.rect.width // 2 and pos[0] + self.rect.width // 2 <= WIDTH
+                and 0 <= pos[1] - self.rect.height // 2 and pos[1] + self.rect.height // 2 <= HEIGHT):
+            self.rect.x = pos[0] - self.rect.width // 2
+            self.rect.y = pos[1] - self.rect.height // 2
+
+
+class Projectile(pygame.sprite.Sprite):
+    def __init__(self, group, x, y):
+        super().__init__(group)
+        self.image = pygame.transform.scale(load_image("none.png", "entity", color_key=-1), (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.damage = 0
+        self.speed = 0
+
+
 if __name__ == "__main__":
     pygame.init()
-    width, height = size = 1000, 600
-    screen = pygame.display.set_mode(size)
-    GameScene = GameScene(width, height)
+
+    WIDTH = 1000
+    HEIGHT = 600
+
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    GameScene = GameScene(WIDTH, HEIGHT)
     all_sprites = pygame.sprite.Group()
     player_sprite_group = pygame.sprite.Group()
     player = Player(player_sprite_group, 100, 300)

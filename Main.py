@@ -1,3 +1,4 @@
+import math
 import os
 import sys
 import pygame
@@ -39,9 +40,10 @@ class GameScene:
         self.image1 = pygame.transform.scale(load_image(self.images[0], "background"), self.size)
         self.image2 = pygame.transform.scale(load_image(self.images[1], "background"), self.size)
         self.alternation = 1
-        self.background_speed = 0.5
+        self.background_speed = 0.1
 
     def update_background(self, screen):
+        # добавить зависимость от fps
         screen.fill((0, 0, 0))
         screen.blit(self.image1, (0, self.y_pos1))
         screen.blit(self.image2, (0, self.y_pos2))
@@ -100,17 +102,24 @@ class Player(Entity):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.speed = 300
 
     def update(self):
         pass
 
     def update_pos(self, pos):
-        # сделать так чтоб корабль свободно перемещался по углам
-        if (0 <= pos[0] - self.rect.width // 2 and pos[0] + self.rect.width // 2 <= WIDTH
-                and 0 <= pos[1] - self.rect.height // 2 and pos[1] + self.rect.height // 2 <= HEIGHT):
+        # привязать мышь к кораблю, скрыть мышь, не давать мыши выходить за рамки экрана
+        if 0 <= pos[0] - self.rect.width // 2 and pos[0] + self.rect.width // 2 <= WIDTH:
             self.rect.x = pos[0] - self.rect.width // 2
+        if 0 <= pos[1] - self.rect.height // 2 and pos[1] + self.rect.height // 2 <= HEIGHT:
             self.rect.y = pos[1] - self.rect.height // 2
 
+        # path = round(math.sqrt((pos[0] - self.rect.width // 2 - self.rect.x) ** 2 + (pos[1] - self.rect.height // 2 - self.rect.y) ** 2), 5)
+        # time = round(path / self.speed, 5)
+        # if 0 <= self.rect.x - self.rect.width // 2 and self.rect.x + self.rect.width // 2 <= WIDTH:
+        #     self.rect.x += round((((pos[0] - self.rect.width // 2) - self.rect.x) / time) / 1000, 3)
+        # if 0 <= self.rect.y - self.rect.height // 2 and self.rect.y + self.rect.height // 2 <= HEIGHT:
+        #     self.rect.y += round((((pos[1] - self.rect.height // 2) - self.rect.y) / time) / 1000, 3)
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self, group, x, y):
@@ -129,6 +138,7 @@ if __name__ == "__main__":
     WIDTH = 1000
     HEIGHT = 600
 
+    pygame.event.set_grab(True)
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     GameScene = GameScene(WIDTH, HEIGHT)
     all_sprites = pygame.sprite.Group()

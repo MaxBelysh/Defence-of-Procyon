@@ -102,24 +102,30 @@ class Player(Entity):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.speed = 300
+        self.speed = 100
+        self.mouse_x = x
+        self.mouse_y = y
 
     def update(self):
-        pass
+        # привязать мышь к кораблю, скрыть мышь, не давать мыши выходить за рамки экрана
+        # if 0 <= pos[0] - self.rect.width // 2 and pos[0] + self.rect.width // 2 <= WIDTH:
+        #     self.rect.x = pos[0] - self.rect.width // 2
+        # if 0 <= pos[1] - self.rect.height // 2 and pos[1] + self.rect.height // 2 <= HEIGHT:
+        #     self.rect.y = pos[1] - self.rect.height // 2
+
+        path = round(math.sqrt((self.mouse_x - self.rect.width // 2 - self.rect.x) ** 2 + (self.mouse_y - self.rect.height // 2 - self.rect.y) ** 2), 3)
+        time = round(path / self.speed, 3)
+        try:
+            if -1000 <= self.rect.x - self.rect.width // 2 and self.rect.x + self.rect.width // 2 <= WIDTH:
+                self.rect.x = self.rect.x + round((((self.mouse_x - self.rect.width // 2) - self.rect.x) / time) / 100)
+            if -1000 <= self.rect.y - self.rect.height // 2 and self.rect.y + self.rect.height // 2 <= HEIGHT:
+                self.rect.y += round((((self.mouse_y - self.rect.height // 2) - self.rect.y) / time) / 100)
+        except ZeroDivisionError:
+            pass
 
     def update_pos(self, pos):
-        # привязать мышь к кораблю, скрыть мышь, не давать мыши выходить за рамки экрана
-        if 0 <= pos[0] - self.rect.width // 2 and pos[0] + self.rect.width // 2 <= WIDTH:
-            self.rect.x = pos[0] - self.rect.width // 2
-        if 0 <= pos[1] - self.rect.height // 2 and pos[1] + self.rect.height // 2 <= HEIGHT:
-            self.rect.y = pos[1] - self.rect.height // 2
-
-        # path = round(math.sqrt((pos[0] - self.rect.width // 2 - self.rect.x) ** 2 + (pos[1] - self.rect.height // 2 - self.rect.y) ** 2), 5)
-        # time = round(path / self.speed, 5)
-        # if 0 <= self.rect.x - self.rect.width // 2 and self.rect.x + self.rect.width // 2 <= WIDTH:
-        #     self.rect.x += round((((pos[0] - self.rect.width // 2) - self.rect.x) / time) / 1000, 3)
-        # if 0 <= self.rect.y - self.rect.height // 2 and self.rect.y + self.rect.height // 2 <= HEIGHT:
-        #     self.rect.y += round((((pos[1] - self.rect.height // 2) - self.rect.y) / time) / 1000, 3)
+        self.mouse_x = pos[0]
+        self.mouse_y = pos[1]
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self, group, x, y):
@@ -134,6 +140,7 @@ class Projectile(pygame.sprite.Sprite):
 
 if __name__ == "__main__":
     pygame.init()
+    pygame.mouse.set_visible(False)
 
     WIDTH = 1000
     HEIGHT = 600
@@ -153,6 +160,7 @@ if __name__ == "__main__":
             if event.type == pygame.MOUSEMOTION:
                 player.update_pos(event.pos)
         GameScene.update_background(screen)
+        player.update()
         player_sprite_group.draw(screen)
         pygame.display.flip()
 

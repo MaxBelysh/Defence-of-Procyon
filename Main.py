@@ -1,8 +1,7 @@
-import math
+import random
 import os
 import sys
 import pygame
-from pygame.locals import *
 import csv
 
 
@@ -29,6 +28,9 @@ class GameScene:
         # GameScene
         self.score = 0
         self.max_score = int(open("max_score.csv", encoding="utf-8").read().split("\n")[1])
+        self.timer = 0
+        self.moment = True
+        self.time = 0
 
         # GameLevel
         self.images = os.listdir("data/background")
@@ -71,15 +73,30 @@ class GameScene:
     def get_max_score(self):
         return self.max_score
 
-    def set_max_score(self):
-        pass
+    def update(self):
+        if int(self.timer) % 5 == 0:
+            if int(self.timer) == self.time:
+                if self.moment:
+                    self.spawn_meteorites()
+                    self.moment = False
+            else:
+                self.time = int(self.timer)
+                self.moment = True
+        self.timer += clock.tick() / 1000
+        print(self.timer)
+
+    def spawn_meteorites(self):
+        meteorite = Meteorite(meteorite_sprite_group, random.randrange(0, WIDTH - 150), -150)
 
 
 class Entity(pygame.sprite.Sprite):
     def __init__(self, group, x, y):
         super().__init__(group)
         self.health = 999
-        self.image = pygame.transform.scale(load_image("none.png", "entity", color_key=-1), (100, 100))
+        self.width = 100
+        self.height = 100
+        self.image = pygame.transform.scale(load_image("none.png", "entity", color_key=-1), (self.width, self.height))
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -89,32 +106,51 @@ class Entity(pygame.sprite.Sprite):
     def update(self):
         if self.health <= 0:
             self.kill()
+        self.rect.x = int(self.x)
+        self.rect.y = int(self.y)
+
+    def get_size(self):
+        return self.width, self.height
+
+    def get_damage(self, damage):
+        self.health -= damage
 
 
-class Enemy(Entity):
-    pass
+class Meteorite(Entity):
+    def __init__(self, group, x, y):
+        super().__init__(group, x, y)
+        self.width = 150
+        self.height = 150
+        self.health = 4
+        self.image = pygame.transform.scale(load_image("meteorite.png", "entity", color_key=-1), (self.width, self.height))
+        self.speed = 50 * clock.tick() / 1000
+
+    def update(self):
+        super().update()
+        if self.rect.y > HEIGHT:
+            self.kill()
+        self.y += self.speed
 
 
 class Player(Entity):
     def __init__(self, group, x, y):
         super().__init__(group, x, y)
         self.health = 3
-        self.image = load_image("plane.png", "entity", color_key=-1)
-        self.image = pygame.transform.scale(self.image, (100, 100))
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        self.image = pygame.transform.scale(load_image("plane.png", "entity", color_key=-1), (self.width, self.height))
         self.speed = 100 * clock.tick() / 1000
         self.cooldown = 0
 
     def update(self):
+        super().update()
         if self.cooldown > 0:
             self.cooldown -= 1000 * clock.tick() / 1000
         elif self.cooldown < 0:
             self.cooldown = 0
-
-        self.rect.x = int(self.x)
-        self.rect.y = int(self.y)
+        collided_meteorites = pygame.sprite.spritecollide(self, meteorite_sprite_group, False)
+        if collided_meteorites:
+            self.health -= 1
+            for meteorite in collided_meteorites:
+                meteorite.kill()
 
     def move_up(self):
         if 0 < self.y < self.speed:
@@ -146,14 +182,16 @@ class Player(Entity):
         if self.cooldown == 0:
             rocket1 = PlayerProjectile(player_projectile_group, self.rect.x + self.rect.width // 2, self.rect.y )
             rocket2 = PlayerProjectile(player_projectile_group, self.rect.x, self.rect.y)
-            self.cooldown = 500
-
+            self.cooldown = 300
 
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self, group, x, y):
         super().__init__(group)
-        self.image = pygame.transform.scale(load_image("none.png", "entity", color_key=-1), (50, 50))
+        self.width = 50
+        self.height = 50
+        self.image = pygame.transform.scale(load_image("none.png", "entity", color_key=-1), (self.width, self.height))
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -169,24 +207,27 @@ class Projectile(pygame.sprite.Sprite):
         self.rect.x = int(self.x)
         self.rect.y = int(self.y)
 
+    def get_size(self):
+        return self.width, self.height
+
 
 class PlayerProjectile(Projectile):
     def __init__(self, group, x, y):
         super().__init__(group, x, y)
-        self.image = pygame.transform.scale(load_image("rocket.png", "projectile", color_key=-1), (50, 50))
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        self.image = pygame.transform.scale(load_image("rocket.png", "projectile", color_key=-1), (self.width, self.height))
         self.damage = 1
-        self.speed = 400 * clock.tick() / 1000
-
+        self.speed = 100 * clock.tick() / 1000
 
     def update(self):
-        if self.rect.x + self.rect.width < 0 or self.rect.x - self.rect.width > WIDTH or \
-                self.rect.y + self.rect.height < 0 or self.rect.y - self.rect.height > HEIGHT:
+        super().update()
+        collided_meteorites = pygame.sprite.spritecollide(self, meteorite_sprite_group, dokill=False)
+        if collided_meteorites:
             self.kill()
+            for meteorite in collided_meteorites:
+                meteorite.get_damage(self.damage)
         self.y -= self.speed
-        self.rect.y = int(self.y)
+
+
 
 
 if __name__ == "__main__":
@@ -199,7 +240,9 @@ if __name__ == "__main__":
     pygame.event.set_grab(True)
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     GameScene = GameScene(WIDTH, HEIGHT)
-    all_sprites = pygame.sprite.Group()
+
+    meteorite_sprite_group = pygame.sprite.Group()
+
     player_sprite_group = pygame.sprite.Group()
     player_projectile_group = pygame.sprite.Group()
     player = Player(player_sprite_group, 100, 300)
@@ -221,11 +264,18 @@ if __name__ == "__main__":
         if keys[pygame.K_a]:
             player.move_left()
 
+        GameScene.update()
         GameScene.update_background(screen)
+
+        meteorite_sprite_group.update()
+
         player.update()
         player_projectile_group.update()
+
+        meteorite_sprite_group.draw(screen)
         player_projectile_group.draw(screen)
         player_sprite_group.draw(screen)
+
         pygame.display.flip()
 
     if GameScene.get_max_score() > int(open("max_score.csv", encoding="utf-8").read().split("\n")[1]):

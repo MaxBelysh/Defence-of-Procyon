@@ -83,7 +83,6 @@ class GameScene:
                 self.time = int(self.timer)
                 self.moment = True
         self.timer += clock.tick() / 1000
-        print(self.timer)
 
     def spawn_meteorites(self):
         meteorite = Meteorite(meteorite_sprite_group, random.randrange(0, WIDTH - 150), -150)

@@ -2,6 +2,7 @@ import math
 import os
 import sys
 import pygame
+from pygame.locals import *
 import csv
 
 
@@ -40,13 +41,12 @@ class GameScene:
         self.image1 = pygame.transform.scale(load_image(self.images[0], "background"), self.size)
         self.image2 = pygame.transform.scale(load_image(self.images[1], "background"), self.size)
         self.alternation = 1
-        self.background_speed = 0.1
+        self.background_speed = 1 * clock.tick() / 1000
 
     def update_background(self, screen):
-        # добавить зависимость от fps
         screen.fill((0, 0, 0))
-        screen.blit(self.image1, (0, self.y_pos1))
-        screen.blit(self.image2, (0, self.y_pos2))
+        screen.blit(self.image1, (0, int(self.y_pos1)))
+        screen.blit(self.image2, (0, int(self.y_pos2)))
         self.y_pos1 += self.background_speed
         self.y_pos2 += self.background_speed
         if self.alternation == 1:
@@ -83,6 +83,8 @@ class Entity(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.x = x
+        self.y = y
 
     def update(self):
         if self.health <= 0:
@@ -102,30 +104,51 @@ class Player(Entity):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.speed = 100
-        self.mouse_x = x
-        self.mouse_y = y
+        self.speed = 100 * clock.tick() / 1000
+        self.cooldown = 0
 
     def update(self):
-        # привязать мышь к кораблю, скрыть мышь, не давать мыши выходить за рамки экрана
-        # if 0 <= pos[0] - self.rect.width // 2 and pos[0] + self.rect.width // 2 <= WIDTH:
-        #     self.rect.x = pos[0] - self.rect.width // 2
-        # if 0 <= pos[1] - self.rect.height // 2 and pos[1] + self.rect.height // 2 <= HEIGHT:
-        #     self.rect.y = pos[1] - self.rect.height // 2
+        if self.cooldown > 0:
+            self.cooldown -= 1000 * clock.tick() / 1000
+        elif self.cooldown < 0:
+            self.cooldown = 0
 
-        path = round(math.sqrt((self.mouse_x - self.rect.width // 2 - self.rect.x) ** 2 + (self.mouse_y - self.rect.height // 2 - self.rect.y) ** 2), 3)
-        time = round(path / self.speed, 3)
-        try:
-            if -1000 <= self.rect.x - self.rect.width // 2 and self.rect.x + self.rect.width // 2 <= WIDTH:
-                self.rect.x = self.rect.x + round((((self.mouse_x - self.rect.width // 2) - self.rect.x) / time) / 100)
-            if -1000 <= self.rect.y - self.rect.height // 2 and self.rect.y + self.rect.height // 2 <= HEIGHT:
-                self.rect.y += round((((self.mouse_y - self.rect.height // 2) - self.rect.y) / time) / 100)
-        except ZeroDivisionError:
-            pass
+        self.rect.x = int(self.x)
+        self.rect.y = int(self.y)
 
-    def update_pos(self, pos):
-        self.mouse_x = pos[0]
-        self.mouse_y = pos[1]
+    def move_up(self):
+        if 0 < self.y < self.speed:
+            self.y += self.y - self.speed
+        elif self.y >= self.speed:
+            self.y += -self.speed
+
+    def move_down(self):
+        if HEIGHT - self.speed < self.y + self.rect.height < HEIGHT:
+            self.rect.y = HEIGHT - self.rect.height
+            self.y = self.rect.y
+        elif self.y + self.rect.height <= HEIGHT - self.speed:
+            self.y += self.speed
+
+    def move_left(self):
+        if 0 < self.x < self.speed:
+            self.x += self.rect.x - self.speed
+        elif self.x >= self.speed:
+            self.x += - self.speed
+
+    def move_right(self):
+        if WIDTH - self.speed < self.x + self.rect.width < WIDTH:
+            self.rect.x = WIDTH - self.rect.width
+            self.x = self.rect.x
+        elif self.x + self.rect.width <= WIDTH - self.speed:
+            self.x += self.speed
+
+    def shot(self):
+        if self.cooldown == 0:
+            rocket1 = PlayerProjectile(player_projectile_group, self.rect.x + self.rect.width // 2, self.rect.y )
+            rocket1 = PlayerProjectile(player_projectile_group, self.rect.x, self.rect.y)
+            self.cooldown = 500
+
+
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self, group, x, y):
@@ -134,22 +157,51 @@ class Projectile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.x = x
+        self.y = y
         self.damage = 0
-        self.speed = 0
+        self.speed = 1 * clock.tick() / 1000
+
+    def update(self):
+        if self.rect.x + self.rect.width < 0 or self.rect.x - self.rect.width > WIDTH or \
+            self.rect.y + self.rect.height < 0 or self.rect.y - self.rect.height > HEIGHT:
+            self.kill()
+        self.rect.x = int(self.x)
+        self.rect.y = int(self.y)
+
+
+class PlayerProjectile(Projectile):
+    def __init__(self, group, x, y):
+        super().__init__(group, x, y)
+        self.image = pygame.transform.scale(load_image("rocket.png", "projectile", color_key=-1), (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.damage = 1
+        self.speed = 400 * clock.tick() / 1000
+
+
+    def update(self):
+        if self.rect.x + self.rect.width < 0 or self.rect.x - self.rect.width > WIDTH or \
+                self.rect.y + self.rect.height < 0 or self.rect.y - self.rect.height > HEIGHT:
+            self.kill()
+        self.y -= self.speed
+        self.rect.y = int(self.y)
 
 
 if __name__ == "__main__":
     pygame.init()
-    pygame.mouse.set_visible(False)
 
     WIDTH = 1000
     HEIGHT = 600
+    clock = pygame.time.Clock()
 
     pygame.event.set_grab(True)
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     GameScene = GameScene(WIDTH, HEIGHT)
     all_sprites = pygame.sprite.Group()
     player_sprite_group = pygame.sprite.Group()
+    player_projectile_group = pygame.sprite.Group()
     player = Player(player_sprite_group, 100, 300)
 
     running = True
@@ -157,10 +209,22 @@ if __name__ == "__main__":
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEMOTION:
-                player.update_pos(event.pos)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                player.shot()
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]:
+            player.move_up()
+        if keys[pygame.K_s]:
+            player.move_down()
+        if keys[pygame.K_d]:
+            player.move_right()
+        if keys[pygame.K_a]:
+            player.move_left()
+
         GameScene.update_background(screen)
         player.update()
+        player_projectile_group.update()
+        player_projectile_group.draw(screen)
         player_sprite_group.draw(screen)
         pygame.display.flip()
 

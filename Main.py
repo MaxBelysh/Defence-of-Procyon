@@ -145,7 +145,7 @@ class Player(Entity):
     def shot(self):
         if self.cooldown == 0:
             rocket1 = PlayerProjectile(player_projectile_group, self.rect.x + self.rect.width // 2, self.rect.y )
-            rocket1 = PlayerProjectile(player_projectile_group, self.rect.x, self.rect.y)
+            rocket2 = PlayerProjectile(player_projectile_group, self.rect.x, self.rect.y)
             self.cooldown = 500
 
 
